@@ -17,6 +17,8 @@ import (
 	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/schema"
 	"github.com/samber/lo"
+	"github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/ollama"
 
 	"github.com/chaitin/panda-wiki/config"
 	"github.com/chaitin/panda-wiki/domain"
@@ -297,6 +299,32 @@ func (u *LLMUsecase) CheckModel(ctx context.Context, req *domain.CheckModelReq) 
 		}
 		return checkResp, nil
 	}
+
+	switch req.Provider {
+	case domain.ModelProviderBrandOllama:
+		llm, err := ollama.New(
+			ollama.WithModel(req.Model),
+			ollama.WithServerURL(req.BaseURL),
+		)
+		if err != nil {
+			checkResp.Error = err.Error()
+			return checkResp, nil
+		}
+		resp, err := llm.GenerateContent(ctx, []llms.MessageContent{
+			llms.TextParts(llms.ChatMessageTypeHuman, "Human: Who was the first man to walk on the moon?"),
+		})
+		if err != nil {
+			checkResp.Error = err.Error()
+			return checkResp, nil
+		}
+		if len(resp.Choices) == 0 || resp.Choices[0].Content == "" {
+			checkResp.Error = "generate failed: emtpy"
+			return checkResp, nil
+		}
+		checkResp.Content = resp.Choices[0].Content
+		return checkResp, nil
+	}
+
 	config := &openai.ChatModelConfig{
 		APIKey:  req.APIKey,
 		BaseURL: req.BaseURL,
@@ -318,6 +346,7 @@ func (u *LLMUsecase) CheckModel(ctx context.Context, req *domain.CheckModelReq) 
 	}
 	chatModel, err := openai.NewChatModel(ctx, config)
 	if err != nil {
+		u.logger.Error("openai NewChatModel failed: ", log.Error(err))
 		checkResp.Error = err.Error()
 		return checkResp, nil
 	}
@@ -326,6 +355,7 @@ func (u *LLMUsecase) CheckModel(ctx context.Context, req *domain.CheckModelReq) 
 		schema.UserMessage("hi"),
 	})
 	if err != nil {
+		u.logger.Error("chatModel Generate failed: ", log.Error(err))
 		checkResp.Error = err.Error()
 		return checkResp, nil
 	}
