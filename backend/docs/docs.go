@@ -4229,10 +4229,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/v1.RecommendNodeListItem"
-                                            }
+                                            "$ref": "#/definitions/v1.NodeRecommendListResp"
                                         }
                                     }
                                 }
@@ -8083,6 +8080,38 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.NodeItem": {
+            "type": "object",
+            "properties": {
+                "emoji": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parent_id": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "number"
+                },
+                "recommend_nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.RecommendNodeListResp"
+                    }
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/domain.NodeType"
+                }
+            }
+        },
         "v1.NodePermissionEditReq": {
             "type": "object",
             "required": [
@@ -8160,6 +8189,35 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.NodeRecommendListResp": {
+            "type": "object",
+            "properties": {
+                "basic_docs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.NodeItem"
+                    }
+                },
+                "dir_docs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.NodeItem"
+                    }
+                },
+                "node_recommends": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.NodeItem"
+                    }
+                },
+                "simple_docs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.NodeItem"
+                    }
+                }
+            }
+        },
         "v1.NotionParseItem": {
             "type": "object",
             "properties": {
@@ -8220,38 +8278,6 @@ const docTemplate = `{
             "properties": {
                 "content": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.RecommendNodeListItem": {
-            "type": "object",
-            "properties": {
-                "emoji": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                },
-                "position": {
-                    "type": "number"
-                },
-                "recommend_nodes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/domain.RecommendNodeListResp"
-                    }
-                },
-                "summary": {
-                    "type": "string"
-                },
-                "type": {
-                    "$ref": "#/definitions/domain.NodeType"
                 }
             }
         },
