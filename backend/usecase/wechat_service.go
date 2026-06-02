@@ -42,7 +42,7 @@ func (u *WechatServiceUsecase) WechatService(ctx context.Context, msg *wechat_se
 	getQA := u.getQAFunc(kbID, domain.AppTypeWechatServiceBot)
 	WechatServiceConfig.WeRepo = u.weRepo
 
-	err := WechatServiceConfig.Wechat(msg, getQA)
+	err := WechatServiceConfig.Wechat(msg, getQA, u.AppUsecase.GetWebAppCopyright(ctx, kbID))
 	if err != nil {
 		u.logger.Error("WechatServiceConf wechat failed", log.Error(err))
 		return err
