@@ -21,6 +21,8 @@ import (
 	"github.com/chaitin/panda-wiki/store/cache"
 )
 
+const defaultWebAppCopyright = "本回答由 PandaWiki 基于 AI 生成，仅供参考。"
+
 type AppUsecase struct {
 	repo          *pg.AppRepository
 	authRepo      *pg.AuthRepo
@@ -733,7 +735,7 @@ func (u *AppUsecase) ShareGetWebAppInfo(ctx context.Context, kbID string, authId
 		appInfo.Settings.HomePageSetting = consts.HomePageSettingDoc
 	}
 	showBrand := true
-	defaultDisclaimer := "本回答由 PandaWiki 基于 AI 生成，仅供参考。"
+	defaultDisclaimer := defaultWebAppCopyright
 
 	if !domain.GetBaseEditionLimitation(ctx).AllowCustomCopyright {
 		appInfo.Settings.WebAppCustomSettings.ShowBrandInfo = &showBrand
@@ -747,6 +749,28 @@ func (u *AppUsecase) ShareGetWebAppInfo(ctx context.Context, kbID string, authId
 	}
 
 	return appInfo, nil
+}
+
+func (u *AppUsecase) GetWebAppCopyright(ctx context.Context, kbID string) string {
+	if !domain.GetBaseEditionLimitation(ctx).AllowCustomCopyright {
+		return defaultWebAppCopyright
+	}
+
+	webAppInfo, err := u.GetAppDetailByKBIDAndAppType(ctx, kbID, domain.AppTypeWeb)
+	if err != nil {
+		u.logger.Error("failed to get web app disclaimer content", log.Error(err), log.String("kb_id", kbID))
+		return defaultWebAppCopyright
+	}
+
+	if webAppInfo.Settings.ConversationSetting.CopyrightHideEnabled {
+		return ""
+	}
+
+	if webAppInfo.Settings.ConversationSetting.CopyrightInfo == "" {
+		return defaultWebAppCopyright
+	}
+
+	return webAppInfo.Settings.ConversationSetting.CopyrightInfo
 }
 
 func (u *AppUsecase) GetWidgetAppInfo(ctx context.Context, kbID string) (*domain.AppInfoResp, error) {
