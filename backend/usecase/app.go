@@ -120,7 +120,7 @@ func (u *AppUsecase) ValidateUpdateApp(ctx context.Context, id string, req *doma
 		if app.Settings.WeChatAppAdvancedSetting.Prompt == "" {
 			app.Settings.WeChatAppAdvancedSetting.Prompt = domain.SystemDefaultPrompt
 		}
-		
+
 		if !slices.Equal(app.Settings.WechatServiceContainKeywords, req.Settings.WechatServiceContainKeywords) ||
 			!slices.Equal(app.Settings.WechatServiceEqualKeywords, req.Settings.WechatServiceEqualKeywords) ||
 			app.Settings.WechatServiceLogo != req.Settings.WechatServiceLogo {

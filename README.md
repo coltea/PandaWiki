@@ -41,9 +41,10 @@ PandaWiki 是一款 AI 大模型驱动的**开源知识库搭建系统**，帮�
 bash -c "$(curl -fsSLk https://release.baizhi.cloud/panda-wiki/manager.sh)"
 ```
 
-根据命令提示的选项进行安装，命令执行过程将会持续几分钟，请耐心等待。
+根据命令提示的选项进行安装，命令执行过程将会持续几分钟，请耐心等待，更多细节参考 [安装 PandaWiki](https://pandawiki.docs.baizhi.cloud/node/01971602-bb4e-7c90-99df-6d3c38cfd6d5)。
 
-> 关于安装与部署的更多细节请参考 [安装 PandaWiki](https://pandawiki.docs.baizhi.cloud/node/01971602-bb4e-7c90-99df-6d3c38cfd6d5)。
+> PandaWiki 目前已提供 SaaS 版本，无需部署 开箱即用  👉 [百智云 AI 知识库](https://ragcloud.app.baizhi.cloud/)
+
 
 ### 登录 PandaWiki
 
