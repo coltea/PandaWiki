@@ -18,6 +18,17 @@ var documentationPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("2001:db8::/32"),   // IPv6 Documentation
 }
 
+var reservedIPv6Prefixes = []netip.Prefix{
+	netip.MustParsePrefix("::/128"),
+	netip.MustParsePrefix("::ffff:0:0/96"),
+	netip.MustParsePrefix("64:ff9b::/96"),
+	netip.MustParsePrefix("100::/64"),
+	netip.MustParsePrefix("2001::/23"),
+	netip.MustParsePrefix("2001:2::/48"),
+	netip.MustParsePrefix("2002::/16"),
+	netip.MustParsePrefix("ff00::/8"),
+}
+
 func GetClientIPFromRemoteAddr(c echo.Context) string {
 	return ExtractHostFromRemoteAddr(c.Request())
 }
@@ -116,25 +127,18 @@ func isOtherReservedIP(ip net.IP) bool {
 			(ip4[0]&0xf0) == 240
 	}
 
-	// Other reserved IPv6 ranges:
-	//   ::/128 - Unspecified address
-	//   ::1/128 - Loopback address (already covered by IsLoopback())
-	//   ::ffff:0:0/96 - IPv4-mapped IPv6 address
-	//   64:ff9b::/96 - IPv4-IPv6 translation (RFC 6052)
-	//   100::/64 - Discard prefix (RFC 6666)
-	//   2001::/23 - IETF Protocol Assignments
-	//   2001:2::/48 - Benchmarking (RFC 5180)
-	//   2002::/16 - 6to4 (RFC 3056)
-	//   fe80::/10 - Link-local (already covered by IsLinkLocalUnicast())
-	//   ff00::/8 - Multicast
-	return ip.Equal(net.IPv6unspecified) ||
-		ip.Equal(net.ParseIP("::ffff:0:0")) ||
-		ip.Equal(net.ParseIP("64:ff9b::")) ||
-		ip.Equal(net.ParseIP("100::")) ||
-		(len(ip) == net.IPv6len && ip[0] == 0x20 && ip[1] == 0x01 && (ip[2]&0xfe) == 0) ||
-		(len(ip) == net.IPv6len && ip[0] == 0x20 && ip[1] == 0x01 && ip[2] == 0x00 && ip[3] == 0x02) ||
-		(len(ip) == net.IPv6len && ip[0] == 0x20 && ip[1] == 0x02) ||
-		(len(ip) == net.IPv6len && ip[0] == 0xff)
+	addr, ok := netip.AddrFromSlice(ip)
+	if !ok || addr.Is4() {
+		return false
+	}
+
+	for _, prefix := range reservedIPv6Prefixes {
+		if prefix.Contains(addr) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func IsIPv6(ipStr string) bool {

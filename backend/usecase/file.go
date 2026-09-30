@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
@@ -34,6 +35,10 @@ type FileUsecase struct {
 	systemSettingRepo *pg.SystemSettingRepo
 	httpClient        *http.Client
 }
+
+const approvedIPDialTimeout = 10 * time.Second
+
+const approvedIPDialAttemptTimeout = 3 * time.Second
 
 func NewFileUsecase(logger *log.Logger, s3Client *s3.MinioClient, config *config.Config, systemSettingRepo *pg.SystemSettingRepo) *FileUsecase {
 	return &FileUsecase{
@@ -325,10 +330,22 @@ func dialApprovedIPs(ips []net.IP) func(context.Context, string, string) (net.Co
 			return nil, fmt.Errorf("invalid target address: %w", err)
 		}
 
+		dialDeadline := time.Now().Add(approvedIPDialTimeout)
+		if deadline, ok := ctx.Deadline(); ok && deadline.Before(dialDeadline) {
+			dialDeadline = deadline
+		}
+
 		dialer := net.Dialer{}
 		var lastErr error
 		for _, ip := range ips {
-			conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(ip.String(), port))
+			remaining := time.Until(dialDeadline)
+			if remaining <= 0 {
+				break
+			}
+			attemptTimeout := min(remaining, approvedIPDialAttemptTimeout)
+			attemptCtx, cancel := context.WithTimeout(ctx, attemptTimeout)
+			conn, err := dialer.DialContext(attemptCtx, "tcp", net.JoinHostPort(ip.String(), port))
+			cancel()
 			if err == nil {
 				return conn, nil
 			}
