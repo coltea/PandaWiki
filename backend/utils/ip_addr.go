@@ -142,47 +142,54 @@ func IsIPv6(ipStr string) bool {
 	return ip != nil && ip.To4() == nil
 }
 
-// ValidateURLForSSRF validates a URL to prevent SSRF attacks
+// ResolveURLForSSRF validates a URL and returns the resolved public IPs that
+// are safe for the caller to connect to.
 // It checks:
 // - URL format is valid
 // - Scheme is http or https only
 // - No credentials in URL
 // - Hostname resolves to public IP addresses only (blocks private/reserved IPs)
-func ValidateURLForSSRF(urlStr string) error {
+func ResolveURLForSSRF(urlStr string) ([]net.IP, error) {
 	// Parse and validate URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
-		return fmt.Errorf("invalid URL format: %w", err)
+		return nil, fmt.Errorf("invalid URL format: %w", err)
 	}
 
 	// Validate URL scheme (only http/https allowed)
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return fmt.Errorf("invalid URL scheme: only http and https are allowed")
+		return nil, fmt.Errorf("invalid URL scheme: only http and https are allowed")
 	}
 
 	// Block URLs with userinfo (credentials)
 	if parsedURL.User != nil {
-		return fmt.Errorf("URLs with credentials are not allowed")
+		return nil, fmt.Errorf("URLs with credentials are not allowed")
 	}
 
 	// Resolve hostname to IP and check if it's private/reserved
 	hostname := parsedURL.Hostname()
 	if hostname == "" {
-		return fmt.Errorf("invalid URL: missing hostname")
+		return nil, fmt.Errorf("invalid URL: missing hostname")
 	}
 
 	// Resolve the hostname to IP addresses
 	ips, err := net.LookupIP(hostname)
 	if err != nil {
-		return fmt.Errorf("failed to resolve hostname: %w", err)
+		return nil, fmt.Errorf("failed to resolve hostname: %w", err)
 	}
 
 	// Check if any resolved IP is private or reserved
 	for _, ip := range ips {
 		if IsPrivateOrReservedIP(ip.String()) {
-			return fmt.Errorf("access to private/reserved IP addresses is not allowed")
+			return nil, fmt.Errorf("access to private/reserved IP addresses is not allowed")
 		}
 	}
 
-	return nil
+	return ips, nil
+}
+
+// ValidateURLForSSRF validates a URL to prevent SSRF attacks.
+func ValidateURLForSSRF(urlStr string) error {
+	_, err := ResolveURLForSSRF(urlStr)
+	return err
 }
