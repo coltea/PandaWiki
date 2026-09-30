@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -22,6 +23,7 @@ var reservedIPv6Prefixes = []netip.Prefix{
 	netip.MustParsePrefix("::/128"),
 	netip.MustParsePrefix("::ffff:0:0/96"),
 	netip.MustParsePrefix("64:ff9b::/96"),
+	netip.MustParsePrefix("64:ff9b:1::/48"),
 	netip.MustParsePrefix("100::/64"),
 	netip.MustParsePrefix("2001::/23"),
 	netip.MustParsePrefix("2001:2::/48"),
@@ -154,6 +156,12 @@ func IsIPv6(ipStr string) bool {
 // - No credentials in URL
 // - Hostname resolves to public IP addresses only (blocks private/reserved IPs)
 func ResolveURLForSSRF(urlStr string) ([]net.IP, error) {
+	return ResolveURLForSSRFWithContext(context.Background(), urlStr)
+}
+
+// ResolveURLForSSRFWithContext validates a URL using the provided context and
+// returns the resolved public IPs that are safe for the caller to connect to.
+func ResolveURLForSSRFWithContext(ctx context.Context, urlStr string) ([]net.IP, error) {
 	// Parse and validate URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
@@ -177,7 +185,7 @@ func ResolveURLForSSRF(urlStr string) ([]net.IP, error) {
 	}
 
 	// Resolve the hostname to IP addresses
-	ips, err := net.LookupIP(hostname)
+	ips, err := net.DefaultResolver.LookupIP(ctx, "ip", hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve hostname: %w", err)
 	}

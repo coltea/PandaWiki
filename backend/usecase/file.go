@@ -40,6 +40,8 @@ const approvedIPDialTimeout = 10 * time.Second
 
 const approvedIPDialAttemptTimeout = 3 * time.Second
 
+const remoteDownloadTimeout = 2 * time.Minute
+
 func NewFileUsecase(logger *log.Logger, s3Client *s3.MinioClient, config *config.Config, systemSettingRepo *pg.SystemSettingRepo) *FileUsecase {
 	return &FileUsecase{
 		s3Client:          s3Client,
@@ -234,13 +236,16 @@ func (u *FileUsecase) AnyDocUploadFile(ctx context.Context, file *multipart.File
 }
 
 func (u *FileUsecase) UploadFileByUrl(ctx context.Context, kbID string, fileURL string) (string, error) {
+	downloadCtx, cancel := context.WithTimeout(ctx, remoteDownloadTimeout)
+	defer cancel()
+
 	// Validate URL to prevent SSRF attacks
-	validatedIPs, err := utils.ResolveURLForSSRF(fileURL)
+	validatedIPs, err := utils.ResolveURLForSSRFWithContext(downloadCtx, fileURL)
 	if err != nil {
 		return "", err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fileURL, nil)
+	req, err := http.NewRequestWithContext(downloadCtx, http.MethodGet, fileURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
