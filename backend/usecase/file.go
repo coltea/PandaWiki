@@ -241,6 +241,7 @@ func (u *FileUsecase) UploadFileByUrl(ctx context.Context, kbID string, fileURL 
 	}
 
 	client := u.httpClientForIPs(validatedIPs)
+	defer client.CloseIdleConnections()
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to download file: %w", err)
@@ -308,6 +309,7 @@ func (u *FileUsecase) UploadFileByUrl(ctx context.Context, kbID string, fileURL 
 func (u *FileUsecase) httpClientForIPs(ips []net.IP) *http.Client {
 	baseTransport := u.httpClient.Transport.(*http.Transport)
 	transport := baseTransport.Clone()
+	transport.DisableKeepAlives = true
 	transport.DialContext = dialApprovedIPs(ips)
 
 	return &http.Client{
